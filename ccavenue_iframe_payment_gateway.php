@@ -3,7 +3,7 @@
 Plugin Name: CCAvenue Payment Gateway Advanced for WooCommerce
 Plugin URI: http://www.aheadzen.com
 Description: Extends WooCommerce with ccavenue Indian payment gateway with iFrame. Collect card credentials and accept payments on your checkout page using our secure iFrame. Reduce payment hops and allow customers to make secure payments without leaving your web page for a seamless brand experience.
-Version: 1.0.0.0
+Version: 1.0.0.1
 Author: Aheadzen Team
 Author URI: http://www.aheadzen.com/
 
@@ -42,6 +42,13 @@ License URI: http://www.gnu.org/licenses/gpl-3.0.html
 			$this -> sandbox      	  = $this -> settings['sandbox'];
 			$this -> iframemode       = $this -> settings['iframemode'];
 			$this -> hideccavenuelogo = $this -> settings['hideccavenuelogo'];
+			
+			$this -> default_add1 = $this -> settings['default_add1'];
+			$this -> default_country = $this -> settings['default_country'];
+			$this -> default_state = $this -> settings['default_state'];
+			$this -> default_city = $this -> settings['default_city'];
+			$this -> default_zip = $this -> settings['default_zip'];
+			$this -> default_phone = $this -> settings['default_phone'];
 			
 			if($this -> hideccavenuelogo=='yes')
 			{
@@ -86,7 +93,9 @@ License URI: http://www.gnu.org/licenses/gpl-3.0.html
         }
 
         function init_form_fields(){
-
+			
+			$countries = WC()->countries->countries;
+			
             $this -> form_fields = array(
                 'enabled' => array(
                     'title' => __('Enable/Disable', 'aheadzen'),
@@ -135,11 +144,42 @@ License URI: http://www.gnu.org/licenses/gpl-3.0.html
                     'title' => __('Access Code', 'aheadzen'),
                     'type' => 'text',
                     'description' =>  __('Given to Merchant by CCAvenue', 'aheadzen'),
-                    )
-                );
+                    ),
+				'default_add1' => array(
+                    'title' => __('Default Address', 'aheadzen'),
+                    'type' => 'text',
+                    'description' =>  __('Enter Address in case of user address not selected while checkout. eg: 123 Green Acres,
+West Eden', 'aheadzen'),
+                    ),
+				'default_city' => array(
+                    'title' => __('Default City', 'aheadzen'),
+                    'type' => 'text',
+                    'description' =>  __('Enter City in case of user city not selected while checkout. eg: Estberry', 'aheadzen'),
+                    ),
+				'default_state' => array(
+                    'title' => __('Default State', 'aheadzen'),
+                    'type' => 'text',
+                    'description' =>  __('Enter State in case of user state not selected while checkout. eg: Wales', 'aheadzen'),
+                    ),
+				'default_zip' => array(
+                    'title' => __('Default Zip', 'aheadzen'),
+                    'type' => 'text',
+                    'description' =>  __('Enter Zip in case of user zip not selected while checkout. eg: 12345', 'aheadzen'),
+                    ),
+                'default_country' => array(
+                    'title' => __('Default Country', 'aheadzen'),
+                    'type' => 'select',
+					'options' => $countries,
+                    'description' =>  __('Select Country in case of user country not selected while checkout. eg: UK', 'aheadzen'),
+                    ),
+				'default_phone' => array(
+                    'title' => __('Default Phone Number', 'aheadzen'),
+                    'type' => 'text',
+                    'description' =>  __('Enter Phone Number in case of user phone number not selected while checkout. eg: 41-345-345678', 'aheadzen'),
+                    ),
+				);				
 
-
-}
+		}
         /**
          * Admin Panel Options
          * - Options for bits like 'title' and availability on a country-by-country basis
@@ -230,9 +270,7 @@ License URI: http://www.gnu.org/licenses/gpl-3.0.html
                          {
                            $msg['class'] = 'error';
                            $msg['message'] = "Thank you for shopping with us. However, the transaction has been declined.";
-
-
-                       }
+						}
 
                        if($transauthorised==false){
                         $order -> update_status('failed');
@@ -249,9 +287,6 @@ License URI: http://www.gnu.org/licenses/gpl-3.0.html
             }
 
         }
-
-
-
 
     }
 
@@ -291,6 +326,22 @@ License URI: http://www.gnu.org/licenses/gpl-3.0.html
 			$post_data = get_post_meta($order_id,'_post_data',true);
 			update_post_meta($order_id,'_post_data',array());
 			
+			if($order -> billing_address_1 && $order -> billing_country && $order -> billing_state && $order -> billing_city && $order -> billing_postcode)
+			{	
+				$country = wc()->countries -> countries [$order -> billing_country];
+				$state = $order -> billing_state;
+				$city = $order -> billing_city;
+				$zip = $order -> billing_postcode;
+				$phone = $order->billing_phone;
+				$billing_address_1 = trim($order -> billing_address_1, ',');
+			}else{
+				$billing_address_1 = $this->default_add1;
+				$country = $this->default_country;
+				$state = $this->default_state;
+				$city = $this->default_city;
+				$zip = $this->default_zip;
+				$phone = $this->default_phone;
+			}
 			$ccavenue_args = array(
                 'merchant_id'      => $this -> merchant_id,
                 'amount'           => $order -> order_total,
@@ -298,12 +349,12 @@ License URI: http://www.gnu.org/licenses/gpl-3.0.html
                 'redirect_url'     => $this->notify_url,
                 'cancel_url'       => $this->notify_url,
                 'billing_name'     => $order -> billing_first_name .' '. $order -> billing_last_name,
-                'billing_address'  => trim($order -> billing_address_1, ','),
-                'billing_country'  => wc()->countries -> countries [$order -> billing_country],
-                'billing_state'    => $order -> billing_state,
-                'billing_city'     => $order -> billing_city,
-                'billing_zip'      => $order -> billing_postcode,
-                'billing_tel'      => $order->billing_phone,
+                'billing_address'  => $billing_address_1,
+                'billing_country'  => $country,
+                'billing_state'    => $state,
+                'billing_city'     => $city,
+                'billing_zip'      => $zip,
+                'billing_tel'      => $phone,
                 'billing_email'    => $order -> billing_email,
                 'delivery_name'    => $order -> shipping_first_name .' '. $order -> shipping_last_name,
                 'delivery_address' => $order -> shipping_address_1,
@@ -330,93 +381,87 @@ License URI: http://www.gnu.org/licenses/gpl-3.0.html
 			{
 				$ccavenue_args['integration_type'] = 'iframe_normal';
 			}
-foreach($ccavenue_args as $param => $value) {
- $paramsJoined[] = "$param=$value";
-}
-$merchant_data   = implode('&', $paramsJoined);
-
-//echo $merchant_data;
-$encrypted_data = encrypt($merchant_data, $this -> working_key);
-
-$form = '';
-if($this -> iframemode=='yes') //Iframe mode
-{
-	$production_url = $this -> liveurl.'&encRequest='.$encrypted_data.'&access_code='.$this->access_code;
-	
-	//echo 'DATA VALUE:'.$merchant_data;
-	//echo '<br><br><br>';
-	//echo 'URL TO CCAvenue : '.$production_url;
-	
-	$form .= '<iframe src="'.$production_url.'" id="paymentFrame" name="paymentFrame"  height="2000" width="600" frameborder="0" scrolling="No" ></iframe>
-	
-	<script type="text/javascript">
-		jQuery(document).ready(function(){
-			 window.addEventListener(\'message\', function(e) {
-				 jQuery("#paymentFrame").css("height",e.data[\'newHeight\']+\'px\'); 	 
-			 }, false);
 			
-		});
-	</script>';
-	/*if(!$_POST)
-	{
-		wc_enqueue_js( 'jQuery("#ccavenue_payment_form").submit();');
-		
-	}
-	$targetto = 'target="paymentFrame"';*/
-
-}else{ //redirect to CCAvenue site
-		wc_enqueue_js( '
-		$.blockUI({
-			message: "' . esc_js( __( 'Thank you for your order. We are now redirecting you to CcAvenue to make payment.', 'woocommerce' ) ) . '",
-			baseZ: 99999,
-			overlayCSS:
-			{
-				background: "#fff",
-				opacity: 0.6
-			},
-			css: {
-				padding:        "20px",
-				zindex:         "9999999",
-				textAlign:      "center",
-				color:          "#555",
-				border:         "3px solid #aaa",
-				backgroundColor:"#fff",
-				cursor:         "wait",
-				lineHeight:     "24px",
+			foreach($ccavenue_args as $param => $value) {
+			 $paramsJoined[] = "$param=$value";
 			}
-		});
-	jQuery("#submit_ccavenue_payment_form").click();
-	' );
-	$targetto = 'target="_top"';
-	
-	//===================================
-	
-	$ccavenue_args_array   = array();
-	$ccavenue_args_array[] = "<input type='hidden' name='encRequest' value='$encrypted_data'/>";
-	$ccavenue_args_array[] = "<input type='hidden' name='access_code' value='{$this->access_code}'/>";	
-	
-	$form .= '<form action="' . esc_url( $this -> liveurl ) . '" method="post" id="ccavenue_payment_form"  '.$targetto.'>
-	' . implode( '', $ccavenue_args_array ) . '
-	<!-- Button Fallback -->
-	<div class="payment_buttons">
-	<input type="submit" class="button alt" id="submit_ccavenue_payment_form" value="' . __( 'Pay via CCAvenue', 'woocommerce' ) . '" /> <a class="button cancel" href="' . esc_url( $order->get_cancel_order_url() ) . '">' . __( 'Cancel order &amp; restore cart', 'woocommerce' ) . '</a>
-	</div>
-	<script type="text/javascript">
-	jQuery(".payment_buttons").hide();
-	</script>
-	</form>';
+			$merchant_data   = implode('&', $paramsJoined);
+
+			//echo $merchant_data;
+			$encrypted_data = encrypt($merchant_data, $this -> working_key);
+
+			$form = '';
+			if($this -> iframemode=='yes') //Iframe mode
+			{
+				$production_url = $this -> liveurl.'&encRequest='.$encrypted_data.'&access_code='.$this->access_code;
+				
+				//echo 'DATA VALUE:'.$merchant_data;
+				//echo '<br><br><br>';
+				//echo 'URL TO CCAvenue : '.$production_url;
+				
+				$form .= '<iframe src="'.$production_url.'" id="paymentFrame" name="paymentFrame"  height="2000" width="600" frameborder="0" scrolling="No" ></iframe>
+				
+				<script type="text/javascript">
+					jQuery(document).ready(function(){
+						 window.addEventListener(\'message\', function(e) {
+							 jQuery("#paymentFrame").css("height",e.data[\'newHeight\']+\'px\'); 	 
+						 }, false);
+						
+					});
+				</script>';
+				/*if(!$_POST)
+				{
+					wc_enqueue_js( 'jQuery("#ccavenue_payment_form").submit();');
+					
+				}
+				$targetto = 'target="paymentFrame"';*/
+
+			}else{ //redirect to CCAvenue site
+					wc_enqueue_js( '
+					$.blockUI({
+						message: "' . esc_js( __( 'Thank you for your order. We are now redirecting you to CcAvenue to make payment.', 'woocommerce' ) ) . '",
+						baseZ: 99999,
+						overlayCSS:
+						{
+							background: "#fff",
+							opacity: 0.6
+						},
+						css: {
+							padding:        "20px",
+							zindex:         "9999999",
+							textAlign:      "center",
+							color:          "#555",
+							border:         "3px solid #aaa",
+							backgroundColor:"#fff",
+							cursor:         "wait",
+							lineHeight:     "24px",
+						}
+					});
+				jQuery("#submit_ccavenue_payment_form").click();
+				' );
+				$targetto = 'target="_top"';
+				
+				//===================================
+				
+				$ccavenue_args_array   = array();
+				$ccavenue_args_array[] = "<input type='hidden' name='encRequest' value='$encrypted_data'/>";
+				$ccavenue_args_array[] = "<input type='hidden' name='access_code' value='{$this->access_code}'/>";	
+				
+				$form .= '<form action="' . esc_url( $this -> liveurl ) . '" method="post" id="ccavenue_payment_form"  '.$targetto.'>
+				' . implode( '', $ccavenue_args_array ) . '
+				<!-- Button Fallback -->
+				<div class="payment_buttons">
+				<input type="submit" class="button alt" id="submit_ccavenue_payment_form" value="' . __( 'Pay via CCAvenue', 'woocommerce' ) . '" /> <a class="button cancel" href="' . esc_url( $order->get_cancel_order_url() ) . '">' . __( 'Cancel order &amp; restore cart', 'woocommerce' ) . '</a>
+				</div>
+				<script type="text/javascript">
+				jQuery(".payment_buttons").hide();
+				</script>
+				</form>';
+			}
+			return $form;
 }
 
-
-
-return $form;
-
-
-
-}
-
-
-        // get all pages
+// get all pages
 function get_pages($title = false, $indent = true) {
     $wp_pages = get_pages('sort_column=menu_order');
     $page_list = array();
