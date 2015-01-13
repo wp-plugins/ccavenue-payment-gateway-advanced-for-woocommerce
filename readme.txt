@@ -45,3 +45,6 @@ Visit [http://aheadzen.com/?p=5342]
 = 1.0.0.1 =
 * Default address, city, state, country , zip and phone number added in case of user not added while checkout so ccavenue get the default value and continue payment.
 
+= 1.0.0.2 =
+* Added option to convert any of currency to INR for ccavenue to work.
+  -- You should use WooCommerce Currency Switcher Plugin to enable multiple currency in your site.

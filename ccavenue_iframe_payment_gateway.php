@@ -3,7 +3,7 @@
 Plugin Name: CCAvenue Payment Gateway Advanced for WooCommerce
 Plugin URI: http://www.aheadzen.com
 Description: Extends WooCommerce with ccavenue Indian payment gateway with iFrame. Collect card credentials and accept payments on your checkout page using our secure iFrame. Reduce payment hops and allow customers to make secure payments without leaving your web page for a seamless brand experience.
-Version: 1.0.0.1
+Version: 1.0.0.2
 Author: Aheadzen Team
 Author URI: http://www.aheadzen.com/
 
@@ -42,6 +42,7 @@ License URI: http://www.gnu.org/licenses/gpl-3.0.html
 			$this -> sandbox      	  = $this -> settings['sandbox'];
 			$this -> iframemode       = $this -> settings['iframemode'];
 			$this -> hideccavenuelogo = $this -> settings['hideccavenuelogo'];
+			$this -> enable_currency_conversion      = $this -> settings['enable_currency_conversion'];
 			
 			$this -> default_add1 = $this -> settings['default_add1'];
 			$this -> default_country = $this -> settings['default_country'];
@@ -114,6 +115,13 @@ License URI: http://www.gnu.org/licenses/gpl-3.0.html
                     'type' => 'checkbox',
                     'label' => __('Enable Iframe method and do not want customer to redirect on CCAvenue site.', 'aheadzen'),
                     'default' => 'no'),
+				 
+				 'enable_currency_conversion' => array(
+                    'title' => __('Currency Conversion to INR?', 'aheadzen'),
+                    'type' => 'checkbox',
+                    'label' => __('Enable Currency Conversion to INR.', 'aheadzen'),
+                    'default' => 'no'),
+				
 				 
 				 'hideccavenuelogo' => array(
                     'title' => __('Show/Hide Logo', 'aheadzen'),
@@ -342,9 +350,25 @@ West Eden', 'aheadzen'),
 				$zip = $this->default_zip;
 				$phone = $this->default_phone;
 			}
+			
+			
+			$the_currency = get_woocommerce_currency();
+			$the_order_total = $order->order_total;
+			if($this->enable_currency_conversion=='yes')
+			{
+				if($the_currency!='INR' && class_exists('WC_Aelia_CurrencySwitcher')){
+					$all_currency = WC_Aelia_CurrencySwitcher::settings()->get_enabled_currencies();
+					if(in_array('INR',$all_currency)){
+						$the_order_total = WC_Aelia_CurrencySwitcher::instance()->convert($the_order_total,$the_currency,'INR');
+						$the_currency = 'INR';
+						$the_display_msg = "<small> $the_currency has been converted to equivalent amount in INR for faster payment processing.</small><br />";
+					}
+					
+				}
+			}
 			$ccavenue_args = array(
                 'merchant_id'      => $this -> merchant_id,
-                'amount'           => $order -> order_total,
+                'amount'           => $the_order_total,
                 'order_id'         => $order_id,
                 'redirect_url'     => $this->notify_url,
                 'cancel_url'       => $this->notify_url,
@@ -364,7 +388,7 @@ West Eden', 'aheadzen'),
                 'delivery_city'    => $order -> shipping_city,
                 'delivery_zip'     => $order -> shipping_postcode,
                 'language'         => 'EN',
-                'currency'         => get_woocommerce_currency(),
+                'currency'         => $the_currency,
 				
 				'payment_option'	=> $post_data['payment_option'],
 				'card_type'		 	=> $post_data['card_type'],
@@ -399,7 +423,7 @@ West Eden', 'aheadzen'),
 				//echo '<br><br><br>';
 				//echo 'URL TO CCAvenue : '.$production_url;
 				
-				$form .= '<iframe src="'.$production_url.'" id="paymentFrame" name="paymentFrame"  height="2000" width="600" frameborder="0" scrolling="No" ></iframe>
+				$form .= $the_display_msg.'<iframe src="'.$production_url.'" id="paymentFrame" name="paymentFrame"  height="2000" width="600" frameborder="0" scrolling="No" ></iframe>
 				
 				<script type="text/javascript">
 					jQuery(document).ready(function(){
