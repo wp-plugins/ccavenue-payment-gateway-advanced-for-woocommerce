@@ -48,3 +48,8 @@ Visit [http://aheadzen.com/?p=5342]
 = 1.0.0.2 =
 * Added option to convert any of currency to INR for ccavenue to work.
   -- You should use WooCommerce Currency Switcher Plugin to enable multiple currency in your site.
+
+ = 1.0.3 =
+* Success response display "1" instead of complete the order - ERROR - SOLVED
+--> it is changed the plugin file name to index.php - because of file name not found for notification url, it was not working.
+Now it is working OK.
