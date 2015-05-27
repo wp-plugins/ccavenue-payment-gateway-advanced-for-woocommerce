@@ -53,3 +53,7 @@ Visit [http://aheadzen.com/?p=5342]
 * Success response display "1" instead of complete the order - ERROR - SOLVED
 --> it is changed the plugin file name to index.php - because of file name not found for notification url, it was not working.
 Now it is working OK.
+
+ = 1.0.4 =
+* CCavenue payment success redirect url was wrong(Redirecting to my account page) - SOLVED
+	-- now it will redirected on order success page so you can manage order tracker system. 

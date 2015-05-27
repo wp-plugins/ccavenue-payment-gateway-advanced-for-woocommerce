@@ -3,7 +3,7 @@
 Plugin Name: CCAvenue Payment Gateway Advanced for WooCommerce
 Plugin URI: http://www.aheadzen.com
 Description: Extends WooCommerce with ccavenue Indian payment gateway with iFrame. Collect card credentials and accept payments on your checkout page using our secure iFrame. Reduce payment hops and allow customers to make secure payments without leaving your web page for a seamless brand experience.
-Version: 1.0.3
+Version: 1.0.4
 Author: Aheadzen Team
 Author URI: http://www.aheadzen.com/
 
@@ -220,6 +220,7 @@ West Eden', 'aheadzen'),
             $order = new WC_Order($order_id);
 			update_post_meta($order_id,'_post_data',$_POST);
 			return array('result' => 'success', 'redirect' => $order->get_checkout_payment_url( true ));
+
         }
         /**
          * Check for valid CCAvenue server callback
@@ -312,7 +313,8 @@ West Eden', 'aheadzen'),
         }
         $woocommerce->set_messages();
     }
-    $redirect_url = get_permalink(woocommerce_get_page_id('myaccount'));
+	$redirect_url = $this->get_return_url( $order );
+    //$redirect_url = get_permalink(woocommerce_get_page_id('myaccount'));
     wp_redirect( $redirect_url );
     exit;
 
